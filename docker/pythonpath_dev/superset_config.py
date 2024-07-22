@@ -124,7 +124,16 @@ class CeleryConfig(object):
 
 CELERY_CONFIG = CeleryConfig
 
-FEATURE_FLAGS = {"THUMBNAILS": True, "THUMBNAILS_SQLA_LISTENERS": True, "ENABLE_TEMPLATE_PROCESSING": True, "ALERT_REPORTS": True}
+FEATURE_FLAGS = { "THUMBNAILS" : True, "LISTVIEWS_DEFAULT_CARD_VIEW" : True}
+THUMBNAIL_SELENIUM_USER = "admin"
+THUMBNAIL_CACHE_CONFIG: CacheConfig = {
+    'CACHE_TYPE': 'redis',
+    'CACHE_DEFAULT_TIMEOUT': 24*60*60,
+    'CACHE_KEY_PREFIX': 'thumbnail_',
+    'CACHE_NO_NULL_WARNING': True,
+    'CACHE_REDIS_URL': 'redis://redis:6379/1'
+}
+
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 WEBDRIVER_BASEURL = "http://superset:8088/"  # When using docker compose baseurl should be http://superset_app:8088/
 # The base URL for the email report hyperlinks.
@@ -132,6 +141,19 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
 SUPERSET_WEBSERVER_TIMEOUT = int(timedelta(minutes=5).total_seconds())
 
 SQLLAB_CTAS_NO_LIMIT = True
+
+WEBDRIVER_TYPE = "firefox"
+# for older versions this was  EMAIL_REPORTS_WEBDRIVER = "firefox"
+WEBDRIVER_OPTION_ARGS = [
+        "--force-device-scale-factor=2.0",
+        "--high-dpi-support=2.0",
+        "--headless",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-extensions",
+        ]
 
 #
 # Optionally import superset_config_docker.py (which will have been included on
