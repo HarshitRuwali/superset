@@ -155,6 +155,14 @@ WEBDRIVER_OPTION_ARGS = [
         "--disable-extensions",
         ]
 
+# Visual Customizations
+APP_NAME = "BHIVE"
+APP_ICON = "/static/assets/images/logo.png"
+# Path for routing when APP_ICON image is clicked
+LOGO_TARGET_PATH = '/superset/welcome/'
+LOGO_TOOLTIP = "BHIVE" # Text displayed when hovering.
+FAVICONS = [{"href": "/static/assets/images/favicon.png"}]
+
 #
 # Optionally import superset_config_docker.py (which will have been included on
 # the PYTHONPATH) in order to allow for local settings to be overridden
