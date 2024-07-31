@@ -163,6 +163,23 @@ LOGO_TARGET_PATH = '/superset/welcome/'
 LOGO_TOOLTIP = "BHIVE" # Text displayed when hovering.
 FAVICONS = [{"href": "/static/assets/images/favicon.png"}]
 
+ENVIRONMENT_TAG_CONFIG = {
+    "variable": "SUPERSET_ENV",
+    "values": {
+        "debug": {
+            "color": "error.base",
+            "text": "flask-debug",
+        },
+        "development": {
+            "color": "",
+            "text": "",
+        },
+        "production": {
+            "color": "",
+            "text": "",
+        },
+    },
+}
 #
 # Optionally import superset_config_docker.py (which will have been included on
 # the PYTHONPATH) in order to allow for local settings to be overridden
