@@ -69,7 +69,8 @@ REDIS_PORT = get_env_variable("REDIS_PORT")
 REDIS_CELERY_DB = get_env_variable("REDIS_CELERY_DB", "0")
 REDIS_RESULTS_DB = get_env_variable("REDIS_RESULTS_DB", "1")
 
-CACHE_DEFAULT_TIMEOUT = int(timedelta(days=1).total_seconds())
+# CACHE_DEFAULT_TIMEOUT = int(timedelta(days=1).total_seconds())
+CACHE_DEFAULT_TIMEOUT = 21600  # 6 hours, in seconds, 60*60*6
 CACHE_CONFIG: CacheConfig = {
     'CACHE_TYPE': 'RedisCache',
     'CACHE_DEFAULT_TIMEOUT': CACHE_DEFAULT_TIMEOUT,
@@ -128,7 +129,7 @@ FEATURE_FLAGS = { "THUMBNAILS" : True, "LISTVIEWS_DEFAULT_CARD_VIEW" : True}
 THUMBNAIL_SELENIUM_USER = "admin"
 THUMBNAIL_CACHE_CONFIG: CacheConfig = {
     'CACHE_TYPE': 'redis',
-    'CACHE_DEFAULT_TIMEOUT': 24*60*60,
+    'CACHE_DEFAULT_TIMEOUT': CACHE_DEFAULT_TIMEOUT,
     'CACHE_KEY_PREFIX': 'thumbnail_',
     'CACHE_NO_NULL_WARNING': True,
     'CACHE_REDIS_URL': 'redis://redis:6379/1'
