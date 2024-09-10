@@ -181,6 +181,7 @@ ENVIRONMENT_TAG_CONFIG = {
         },
     },
 }
+DEFAULT_TIME_FILTER = "Last week"
 #
 # Optionally import superset_config_docker.py (which will have been included on
 # the PYTHONPATH) in order to allow for local settings to be overridden
