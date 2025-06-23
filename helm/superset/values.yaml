@@ -19,13 +19,17 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# A README is automatically generated from this file to document it, using helm-docs (see https://github.com/norwoodj/helm-docs)
+# A README is automatically generated from this file to document it,
+# using helm-docs (see https://github.com/norwoodj/helm-docs)
 # To update it, install helm-docs and run helm-docs from the root of this chart
 
 # -- Provide a name to override the name of the chart
 nameOverride: ~
 # -- Provide a name to override the full names of resources
 fullnameOverride: ~
+
+# -- Labels to be added to all resources
+extraLabels: {}
 
 # -- User ID directive. This user must have enough permissions to run the bootstrap script
 # Running containers as root is not recommended in production. Change this to another UID - e.g. 1000 to be more secure
@@ -62,7 +66,7 @@ envFromSecret: '{{ template "superset.fullname" . }}-env'
 envFromSecrets: []
 
 # -- Extra environment variables that will be passed into pods
-extraEnv: {}
+extraEnv:
   # Different gunicorn settings, refer to the gunicorn documentation
   # https://docs.gunicorn.org/en/stable/settings.html#
   # These variables are used as Flags at the gunicorn startup
@@ -83,6 +87,18 @@ extraEnv: {}
   # # If a whitelist is not set, any address that can use your OAuth2 endpoint will be able to login.
   # #   this includes any random Gmail address if your OAuth2 Web App is set to External.
   # OAUTH_WHITELIST_REGEX: ...
+  DB_HOST: host.docker.internal
+  DB_PORT: "5432"
+  REDIS_HOST: superset-redis-master.default.svc.cluster.local
+  REDIS_PORT: "6379"
+  SCREENSHOT_METHOD: selenium
+  WEBDRIVER_TYPE: chrome
+  WEBDRIVER_OPTIONS: "--headless,--no-sandbox,--disable-gpu,--disable-dev-shm-usage"
+  SCREENSHOT_SELENIUM_URL: "http://localhost:4444/wd/hub"
+  SCREENSHOT_SELENIUM_MODE: "server"
+  SCREENSHOT_LOAD_WAIT: "300"
+  SCREENSHOT_LOCATE_WAIT: "300"
+  WEBDRIVER_BASEURL: "http://superset:8088"
 
 # -- Extra environment variables in RAW format that will be passed into pods
 extraEnvRaw: []
@@ -94,15 +110,15 @@ extraEnvRaw: []
   #       key: password
 
 # -- Extra environment variables to pass as secrets
-extraSecretEnv: {}
+extraSecretEnv:
   # MAPBOX_API_KEY: ...
   # # Google API Keys: https://console.cloud.google.com/apis/credentials
   # GOOGLE_KEY: ...
   # GOOGLE_SECRET: ...
   #   # Generate your own secret key for encryption. Use openssl rand -base64 42 to generate a good key
-  #  SUPERSET_SECRET_KEY: 'CHANGE_ME_TO_A_COMPLEX_RANDOM_SECRET'
+  SUPERSET_SECRET_KEY: 'Kj*oYQS'
 
-# -- Extra files to mount on `/app/pythonpath`
+# -- Extra files to be mounted as ConfigMap on the path specified in `extraConfigMountPath`
 extraConfigs: {}
   # import_datasources.yaml: |
   #     databases:
@@ -116,7 +132,7 @@ extraConfigs: {}
   #       sqlalchemy_uri: example://example-db.local
   #       tables: []
 
-# -- Extra files to mount on `/app/pythonpath` as secrets
+# -- Extra files to be mounted as Secrets on the path specified in `configMountPath`
 extraSecrets: {}
 
 extraVolumes: []
@@ -138,7 +154,29 @@ extraVolumeMounts: []
 # -- A dictionary of overrides to append at the end of superset_config.py - the name does not matter
 # WARNING: the order is not guaranteed
 # Files can be passed as helm --set-file configOverrides.my-override=my-file.py
-configOverrides: {}
+configOverrides:
+  my_override: | 
+    DEFAULT_TIMEZONE = 'Asia/Kolkata'
+    FEATURE_FLAGS = { 
+      "THUMBNAILS" : True, 
+      "LISTVIEWS_DEFAULT_CARD_VIEW" : True, 
+      "DASHBOARD_RBAC": True,
+      "THUMBNAILS_SQLA_LISTENERS": True,
+      "ENABLE_TEMPLATE_PROCESSING": True,
+    }
+    SCREENSHOT_SELENIUM_COMMAND = [
+      "/usr/bin/chromedriver",
+      "--port=4444"
+    ]
+    WEBDRIVER_TYPE = 'chrome'
+    WEBDRIVER_BASEURL = 'http://superset:8088'
+    WEBDRIVER_OPTION_ARGS = [
+      "--headless",
+      "--disable-gpu",
+      "--no-sandbox",
+      "--disable-dev-shm-usage"
+    ]
+
   # extend_timeout: |
   #    # Extend timeout to allow long running queries.
   #    SUPERSET_WEBSERVER_TIMEOUT = ...
@@ -170,7 +208,8 @@ configOverrides: {}
   #   AUTH_USER_REGISTRATION = True
   #   # The default user self registration role
   #   AUTH_USER_REGISTRATION_ROLE = "Admin"
-  # secret: |
+  secret:
+    SECRET_KEY = 'Kj*oYQS'
   #   # Generate your own secret key for encryption. Use `openssl rand -base64 42` to generate a good key
   #   SECRET_KEY = 'CHANGE_ME_TO_A_COMPLEX_RANDOM_SECRET'
 
@@ -184,15 +223,15 @@ configMountPath: "/app/pythonpath"
 extraConfigMountPath: "/app/configs"
 
 image:
-  repository: apachesuperset.docker.scarf.sh/apache/superset
-  tag: ~
+  repository: apache/superset
+  tag: 4.0.2-dev
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 
 initImage:
   repository: apache/superset
-  tag: dockerize
+  tag: 4.0.2-dockerize
   pullPolicy: IfNotPresent
 
 service:
@@ -247,6 +286,13 @@ hostAliases: []
 
 # Superset node configuration
 supersetNode:
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
   replicas:
     enabled: true
     replicaCount: 1
@@ -273,10 +319,10 @@ supersetNode:
     - ". {{ .Values.configMountPath }}/superset_bootstrap.sh; /usr/bin/run-server.sh"
   connections:
     # -- Change in case of bringing your own redis and then also set redis.enabled:false
-    redis_host: '{{ .Release.Name }}-redis-headless'
+    redis_host: superset-redis-master.default.svc.cluster.local
     redis_port: "6379"
     redis_user: ""
-    # redis_password: superset
+    redis_password: password
     redis_cache_db: "1"
     redis_celery_db: "0"
     # Or SSL port is usually 6380
@@ -285,10 +331,10 @@ supersetNode:
       enabled: false
       ssl_cert_reqs: CERT_NONE
     # You need to change below configuration incase bringing own PostgresSQL instance and also set postgresql.enabled:false
-    db_host: '{{ .Release.Name }}-postgresql'
+    db_host: host.docker.internal
     db_port: "5432"
-    db_user: superset
-    db_pass: superset
+    db_user: postgres
+    db_pass: mysecretpassword
     db_name: superset
   env: {}
   # -- If true, forces deployment to reload on each upgrade
@@ -366,6 +412,13 @@ supersetNode:
 
 # Superset Celery worker configuration
 supersetWorker:
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
   replicas:
     enabled: true
     replicaCount: 1
@@ -388,7 +441,10 @@ supersetWorker:
   command:
     - "/bin/sh"
     - "-c"
-    - ". {{ .Values.configMountPath }}/superset_bootstrap.sh; celery --app=superset.tasks.celery_app:app worker"
+    - "apt-get update &&
+        apt-get install -y chromium-driver &&
+        export SCREENSHOT_SELENIUM_DRIVER=chrome &&
+        . {{ .Values.configMountPath }}/superset_bootstrap.sh; celery --app=superset.tasks.celery_app:app worker"
   # -- If true, forces deployment to reload on each upgrade
   forceReload: false
   # -- Init container
@@ -405,7 +461,19 @@ supersetWorker:
         - -c
         - dockerize -wait "tcp://$DB_HOST:$DB_PORT" -wait "tcp://$REDIS_HOST:$REDIS_PORT" -timeout 120s
   # -- Launch additional containers into supersetWorker pod
-  extraContainers: []
+  extraContainers:
+    - name: selenium-agent
+      image: seleniarm/standalone-chromium:latest
+      ports:
+        - containerPort: 4444
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+
   # -- Annotations to be added to supersetWorker deployment
   deploymentAnnotations: {}
   # -- Labels to be added to supersetWorker deployment
@@ -452,11 +520,20 @@ supersetWorker:
   readinessProbe: {}
   # -- Set priorityClassName for supersetWorker pods
   priorityClassName: ~
+  # -- Extra environment variables that will be passed into supersetWorker pods
+  extraEnv:
+    SCREENSHOT_SELENIUM: "True"
+    SCREENSHOT_SELENIUM_MODE: "server"
+    SCREENSHOT_SELENIUM_HOST: "http://localhost:4444"
+    SCREENSHOT_SELENIUM_URL: "http://localhost:4444/wd/hub"
+    WEBDRIVER_BASEURL: "http://superset:8088"
+    SCREENSHOT_LOAD_WAIT: "300"
+    SCREENSHOT_LOCATE_WAIT: "300"
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
 supersetCeleryBeat:
   # -- This is only required if you intend to use alerts and reports
-  enabled: false
+  enabled: true
   # -- Sets the [pod disruption budget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/) for supersetCeleryBeat pods
   podDisruptionBudget:
     # -- Whether the pod disruption budget should be created
@@ -774,6 +851,8 @@ init:
   extraContainers: []
   ## Annotations to be added to init job pods
   podAnnotations: {}
+  # Labels to be added to init job pods
+  # podLabels: {}
   podSecurityContext: {}
   containerSecurityContext: {}
   ## Tolerations to be added to init job pods
@@ -792,7 +871,7 @@ postgresql:
   ##
   ## Use the PostgreSQL chart dependency.
   ## Set to false if bringing your own PostgreSQL.
-  enabled: true
+  enabled: false
 
   ## Authentication parameters
   auth:
@@ -806,7 +885,7 @@ postgresql:
     database: superset
 
   image:
-    tag: "14.6.0-debian-11-r13"
+    tag: "14.17.0-debian-12-r3"
 
   ## PostgreSQL Primary parameters
   primary:
@@ -849,13 +928,13 @@ redis:
   ##
   auth:
     ## Enable password authentication
-    enabled: false
+    enabled: true
     ## The name of an existing secret that contains the redis password.
     existingSecret: ""
     ## Name of the key containing the secret.
     existingSecretKey: ""
     ## Redis password
-    password: superset
+    password: password
   ##
   ## Master configuration
   ##
@@ -867,7 +946,7 @@ redis:
     ## docker registry secret names (list)
     # pullSecrets: nil
     ##
-    ## Configure persistance
+    ## Configure persistence
     persistence:
       ##
       ## Use a PVC to persist data.
